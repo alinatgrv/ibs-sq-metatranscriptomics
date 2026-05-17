@@ -585,11 +585,44 @@ This repository contains the analysis performed for the student bioinformatics p
 
 ## References
 
-1. Jacobs JP et al. IBS multi-omics study based on metatranscriptomics and metabolomics data.
-2. Hanson BT et al. Sulfoquinovose is a select nutrient of prominent bacteria and a source of hydrogen sulfide in the human gut.
-3. Wei Y, Tong Y, Zhang Y. New mechanisms for bacterial degradation of sulfoquinovose.
-4. HUMAnN documentation.
-5. MetaPhlAn documentation.
-6. MaAsLin2 documentation.
-7. NCBI SRA / BioProject PRJNA812699.
+### Dataset
+
+Jacobs, J. P., Lagishetty, V., Hauer, M. C., Labus, J. S., Dong, T. S., Toma, R., Vuyisich, M., Naliboff, B. D., Lackner, J. M., Gupta, A., Tillisch, K., & Mayer, E. A. (2023).  
+**Multi-omics profiles of the intestinal microbiome in irritable bowel syndrome and its bowel habit subtypes.**  
+*Microbiome*, 11, 5.  
+https://doi.org/10.1186/s40168-022-01450-5
+
+NCBI BioProject / SRA accession used for metatranscriptomic sequencing data: **PRJNA812699**.
+
+### Sulfoquinovose metabolism background
+
+Hanson, B. T., Kits, K. D., Löffler, J., Burrichter, A. G., Fiedler, A., Denger, K., Frommeyer, B., Herbold, C. W., Rattei, T., Karcher, N., Segata, N., Schleheck, D., & Loy, A. (2021).  
+**Sulfoquinovose is a select nutrient of prominent bacteria and a source of hydrogen sulfide in the human gut.**  
+*The ISME Journal*, 15, 2779–2791.  
+https://doi.org/10.1038/s41396-021-00968-0
+
+Wei, Y., Tong, Y., & Zhang, Y. (2022).  
+**New mechanisms for bacterial degradation of sulfoquinovose.**  
+*Bioscience Reports*, 42(10), BSR20220314.  
+https://doi.org/10.1042/BSR20220314
+
+Krasenbrink, J., Hanson, B. T., Weiss, A. S., Borusak, S., Tanabe, T. S., Lang, M., Aichinger, G., Hausmann, B., Berry, D., Richter, A., Marko, D., Mussmann, M., Schleheck, D., Stecher, B., & Loy, A. (2025).  
+**Sulfoquinovose is exclusively metabolized by the gut microbiota and degraded differently in mice and humans.**  
+*Microbiome*, 13, 184.  
+https://doi.org/10.1186/s40168-025-02175-x
+
+### Software and documentation
+
+KneadData documentation:  
+https://huttenhower.sph.harvard.edu/kneaddata/
+
+MetaPhlAn documentation:  
+https://huttenhower.sph.harvard.edu/metaphlan/
+
+HUMAnN documentation:  
+https://huttenhower.sph.harvard.edu/humann/
+
+MaAsLin2 documentation:  
+https://github.com/biobakery/Maaslin2
+
 
