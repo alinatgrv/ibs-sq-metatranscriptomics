@@ -212,6 +212,10 @@ FastQC reports were aggregated with MultiQC after preprocessing. The plot below 
   <b>Figure 1.</b> MultiQC summary of FastQC mean per-base quality scores across preprocessed paired-end read files.
 </p>
 
+The full interactive MultiQC report is available here:
+
+[Open full MultiQC report](docs/qc/SQ_data_multiqc_report.html)
+
 ### Taxonomic profiling
 
 Taxonomic profiling was performed with **MetaPhlAn**. Individual sample profiles were merged into a single species-level table. The main downstream taxonomic matrix contained:
