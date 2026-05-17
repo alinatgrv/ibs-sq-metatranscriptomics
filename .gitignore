@@ -1,0 +1,32 @@
+# Raw sequencing data
+*.fastq
+*.fastq.gz
+*.fq
+*.fq.gz
+*.sra
+
+# Large bioinformatics outputs
+reads_folder/
+qc_kneaddata/
+databases/
+logs/
+*_humann_temp/
+*bowtie2_aligned.tsv
+*diamond_aligned.tsv
+
+# Large HUMAnN / MetaPhlAn / MaAsLin2 intermediate tables
+genefamilies_all.tsv
+genefamilies_all_cpm.tsv
+pathabundance_all.tsv
+pathabundance_all_cpm.tsv
+pathcoverage_all.tsv
+filtered_data.tsv
+filtered_data_norm.tsv
+filtered_data_norm_transformed.tsv
+
+# System files
+.DS_Store
+__pycache__/
+.ipynb_checkpoints/
+.Rhistory
+.RData
