@@ -1,4 +1,4 @@
-# Sulfoquinovose metabolism in IBS gut microbiome
+# Multi-omics analysis of sulfoglucose metabolism in Irritable Bowel Syndrome
 
 ## Project overview
 
@@ -127,6 +127,8 @@ SRA metadata and FASTQ download
         ↓
 Quality control and host read removal with KneadData
         ↓
+Targeted SQ-related gene search with DIAMOND
+        ↓
 Taxonomic profiling with MetaPhlAn
         ↓
 Functional profiling with HUMAnN
@@ -197,6 +199,18 @@ The final preprocessing configuration used:
 ```
 
 These parameters were selected after test runs showed no substantial adapter contamination in FastQC reports. Therefore, preset adapter trimming was disabled with `--sequencer-source none`. The minimum read length was set to 74 bp to retain sufficiently informative reads after trimming.
+
+#### Read quality control
+
+FastQC reports were aggregated with MultiQC after preprocessing. The plot below shows the mean per-base sequence quality across 1182 FastQC entries. Most read positions had high Phred quality scores, mostly around 35–40, indicating overall good read quality after preprocessing.
+
+<p align="center">
+  <img src="results/figures/qc_fastqc_mean_quality_scores.png" alt="FastQC mean quality scores across read positions" width="900">
+</p>
+
+<p align="center">
+  <b>Figure 1.</b> MultiQC summary of FastQC mean per-base quality scores across preprocessed paired-end read files.
+</p>
 
 ### Taxonomic profiling
 
