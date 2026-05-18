@@ -1,0 +1,7 @@
+original_taxon_name	feature	association_direction	coef	stderr	pval	qval	N	N.not.0	metadata	value	metabolite	taxon_clean
+s__Mediterraneibacter_faecis	s_Mediterraneibacter_faecis	Positive	0.719588790778555	0.135674641052404	2.72765648566992e-07	8.28871677423639e-05	234	29	phenol_sulfate	phenol_sulfate	phenol sulfate	Mediterraneibacter faecis
+s__Coprococcus_comes	s_Coprococcus_comes	Positive	0.583340840935249	0.110074216611664	2.78476214937096e-07	8.28871677423639e-05	234	28	phenol_sulfate	phenol_sulfate	phenol sulfate	Coprococcus comes
+s__Fusicatenibacter_saccharivorans	s_Fusicatenibacter_saccharivorans	Positive	0.559159517374651	0.106966117648313	3.94700798773161e-07	8.28871677423639e-05	234	29	phenol_sulfate	phenol_sulfate	phenol sulfate	Fusicatenibacter saccharivorans
+s__Blautia_massiliensis	s_Blautia_massiliensis	Positive	0.434144118328952	0.101570169899338	2.8416422050428e-05	0.00447558647294241	234	25	phenol_sulfate	phenol_sulfate	phenol sulfate	Blautia massiliensis
+s__Clostridiaceae_bacterium	s_Clostridiaceae_bacterium	Positive	0.559057477109451	0.143806212738986	0.000133581823899074	0.0168313098112833	234	38	phenol_sulfate	phenol_sulfate	phenol sulfate	Clostridiaceae bacterium
+s__Oscillospiraceae_bacterium_CLA_AA_H250	s_Oscillospiraceae_bacterium_CLA_AA_H250	Positive	0.444607103466832	0.120294069044884	0.00027567738122549	0.0289461250286765	234	25	phenol_sulfate	phenol_sulfate	phenol sulfate	Oscillospiraceae bacterium CLA AA H250
