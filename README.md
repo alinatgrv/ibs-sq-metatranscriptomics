@@ -45,7 +45,7 @@ The main aim of the project was to analyze gut microbiome metatranscriptomic dat
   - IBS: **128 samples**
   - Control: **106 samples**
 
-Large raw sequencing files and full intermediate tables are not stored in this repository. The repository contains scripts, selected summary tables, selected figures, and small example/demo input files where appropriate. Full raw and intermediate data were stored on the HPC cluster under the main project directory:
+Large raw sequencing files and full intermediate tables are not stored in this repository. The repository contains scripts, selected summary tables, selected figures. Full raw and intermediate data were stored on the HPC cluster under the main project directory:
 
 ```text
 /home/alina_tgrv/beegfs/IBS_SQ
@@ -62,9 +62,6 @@ The recommended repository structure is:
 ├── README.md
 ├── LICENSE
 ├── .gitignore
-├── data/
-│   ├── demo/
-│   └── README.md
 ├── docs/
 │   ├── methods.md
 │   ├── workflow.md
