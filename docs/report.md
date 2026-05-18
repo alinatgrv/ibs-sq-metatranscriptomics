@@ -884,7 +884,7 @@ Overall, the results support the idea that SQ-related metabolism should be inves
 4. Wei Y, Tong Y, Zhang Y. New mechanisms for bacterial degradation of sulfoquinovose.  
    https://portlandpress.com/bioscirep/article/42/10/BSR20220314/231898/New-mechanisms-for-bacterial-degradation-of
 
-5. Recent SQ-related microbiome article:  
+5. Sulfoquinovose is exclusively metabolized by the gut microbiota and degraded differently in mice and humans:  
    https://link.springer.com/article/10.1186/s40168-025-02175-x
 
 6. HUMAnN documentation:  
