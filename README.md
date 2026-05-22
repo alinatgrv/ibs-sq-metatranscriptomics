@@ -184,7 +184,7 @@ The main software versions used in the analysis were:
 | seaborn | 0.13.2 |
 | scikit-learn | 1.8.0 |
 
-Preprocessing tools were run from the `ibs_env` conda environment. HUMAnN and MetaPhlAn were run from the `humann39_env_fix` environment. MaAsLin2 analyses were run from `maaslin2_env`, and Random Forest models were run from `rf_py_env`. Targeted SQ DIAMOND searches were run from the `diamond_env` environment. Targeted SQ-score parsing, filtering, statistical comparison, and visualization scripts were run using the Python environment listed above.
+Preprocessing tools were run from the `ibs_env` conda environment. HUMAnN and MetaPhlAn were run from the `humann39_env_fix` environment. MaAsLin2 analyses were run from `maaslin2_env`, and Random Forest models were run from `rf_py_env`. Targeted SQ DIAMOND searches were run from the `diamond_sq_env` environment. Targeted SQ-score parsing, filtering, statistical comparison, and visualization scripts were run using the Python environment listed above.
 
 ### Data download
 
@@ -390,6 +390,7 @@ Example:
 ```bash
 mamba env create -f envs/maaslin2_env.yml
 mamba env create -f envs/random_forest_env.yml
+mamba env create -f envs/diamond_sq_env.yml
 ```
 
 ### 3. Run preprocessing and profiling scripts
@@ -406,6 +407,10 @@ scripts/profiling/
 Targeted SQ-related gene analysis is implemented in:
 ```text
 scripts/targeted_sq/
+```
+Before running targeted SQ-score scripts, activate the corresponding conda environment:
+```bash
+mamba activate targeted_sq_env
 ```
 
 Example DIAMOND hit parsing and filtering:

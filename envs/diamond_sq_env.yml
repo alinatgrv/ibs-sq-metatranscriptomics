@@ -1,0 +1,17 @@
+name: diamond_sq_env
+
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+
+dependencies:
+  - python=3.11
+  - diamond
+  - pandas
+  - numpy
+  - scipy
+  - matplotlib
+  - seaborn
+  - openpyxl
+  - pyyaml
