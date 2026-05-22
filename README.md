@@ -53,6 +53,21 @@ Large raw sequencing files and full intermediate tables are not stored in this r
 /home/alina_tgrv/beegfs/IBS_SQ
 ```
 
+## Prerequisites and computational requirements
+The workflow was designed for execution on a Linux HPC cluster with SLURM. The full analysis requires substantial disk space because raw SRA files, FASTQ files, KneadData outputs, HUMAnN/MetaPhlAn profiles, DIAMOND outputs, reference databases, and logs are generated as intermediate data.
+
+| Resource | Requirement |
+|---|---:|
+| Operating system | Linux / HPC environment |
+| Workflow manager | SLURM |
+| CPU | up to 16 CPU threads per job |
+| RAM | 32 GB minimum; 64 GB recommended for memory-intensive steps |
+| Storage | at least 5 TB; 8–10 TB recommended for the full workflow |
+| Environment management | Conda / Mamba |
+
+Large raw sequencing files, full intermediate outputs, complete DIAMOND hit tables, and reference databases are not stored in this repository.
+
+
 ## Repository structure
 
 This repository is a cleaned reporting version of the analysis project. Large raw data files, complete FASTQ files, full HUMAnN per-sample output directories, and large intermediate matrices are not intended to be stored in GitHub.
