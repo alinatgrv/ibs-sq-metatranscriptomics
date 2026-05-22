@@ -69,6 +69,7 @@ ibs-sq-metatranscriptomics/
 │   ├── humann_metaphlan_env.yml
 │   ├── maaslin2_env.yml
 │   ├── rf_py_env.yml
+│   ├── diamond_sq_env.yml
 │   └── software_versions.md
 ├── results/
 │   ├── README.md
@@ -80,7 +81,8 @@ ibs-sq-metatranscriptomics/
     ├── differential_abundance/
     ├── crossomics/
     ├── machine_learning/
-    └── visualization/
+    ├── visualization/
+    └── targeted_sq/
 ```
 
 Large raw sequencing files, full intermediate HUMAnN and MetaPhlAn outputs, and complete MaAsLin2 folders are not included in the repository. The repository contains selected scripts, final summary tables, final figures, documentation, and environment files.
@@ -99,6 +101,7 @@ Main environments:
 | `humann39_env_fix` | HUMAnN and MetaPhlAn profiling |
 | `maaslin2_env` | MaAsLin2 association analyses and R plotting |
 | `rf_py_env` | Random Forest modelling and Python visualization |
+| `diamond_sq_env` | DIAMOND hit parsing, SQ-score calculation, statistical comparison |
 
 The exported environment files are stored in `envs/`.
 
@@ -119,6 +122,13 @@ Important tools included:
 - MaAsLin2 1.18.0
 - Python 3.11.15
 - scikit-learn 1.8.0
+- MultiQC 1.35
+- DIAMOND 2.2.0
+- pandas 3.0.3
+- NumPy 2.4.6
+- SciPy 1.17.1
+- matplotlib 3.10.9
+- seaborn 0.13.2
 
 ---
 
@@ -132,6 +142,8 @@ SRA metadata collection and FASTQ download
 Quality control, trimming, and host read removal with KneadData
         ↓
 Targeted SQ-related gene search with DIAMOND
+        ↓
+DIAMOND hit filtering, enzyme-level aggregation, and SQ score calculation
         ↓
 Taxonomic profiling with MetaPhlAn
         ↓
@@ -357,12 +369,66 @@ results/tables/SQ_pathway_uniref90_hits.tsv
 
 ## 11. Targeted SQ-related gene search with DIAMOND
 
-Because standard HUMAnN output did not reconstruct SQ pathways, a targeted gene-level search was included.
+Because standard HUMAnN output did not reconstruct known SQ degradation pathways, a targeted read-level search was included as an additional SQ-focused analysis step.
 
-The goal of this step was to detect SQ-related genes more directly using a curated protein reference and DIAMOND sequence search.
+The goal of this step was to detect SQ-related transcriptional signal more directly using a curated protein reference library and DIAMOND `blastx` search. The custom reference library included SQ-related homologs associated with several pathway models, including sulfo-EMP, SQ hydrolysis, sulfo-TAL, sulfo-TK, and sulfo-ED-related routes.
 
-This step was used to support the construction of SQ-related features and SQ-score summaries.
+DIAMOND hits were parsed and annotated using protein metadata from the reference FASTA file and a homolog annotation table. For each hit, the following information was retained or derived:
 
+- sample identifier;
+- query read identifier;
+- reference protein accession;
+- homologous reference gene;
+- SQ-related pathway assignment;
+- percentage identity;
+- bit score;
+- alignment length;
+- reference protein length;
+- subject coverage.
+
+Subject coverage was calculated as:
+
+```text
+subject_coverage = 100 × alignment_length_aa / protein_length_aa
+```
+Hits were filtered by percentage identity, bit score, alignment length, and subject coverage. When multiple hits were assigned to the same read, the best hit was retained based on bit score, sequence identity, and subject coverage.
+
+Filtered hits were then aggregated by sample and reference protein. For each sample and SQ-related enzyme, the number of uniquely assigned reads was counted. Enzyme-level abundance was normalized using a TPM-like approach based on protein length:
+
+```text
+RPK_e = reads_e / protein_length_e(kb)
+
+TPM_e = 10^6 × RPK_e / sum(RPK_all)
+```
+
+For each SQ pathway model, a targeted SQ score was calculated using predefined core enzymatic steps. Alternative enzymes within the same pathway step were treated using OR logic, and the maximum TPM among alternative enzymes was used for that step.
+
+| Pathway model | Core enzymatic steps used for scoring |
+|---|---|
+| `CORE_EMP` | `(yihV or sqiK)`, `(yihT or sqiA)`, `(yihS or sqvD)`, `(yihQ or sqgA)`, `(yihU or slaB)` |
+| `CORE_EMP_alt` | `(yihV or sqiK)`, `(yihT or sqiA)`, `(yihS or sqvD)`, `(yihQ or sqgA)`, `(sqvB or yihR)` |
+| `CORE_TAL` | `sqvA`, `(yihS or sqvD)`, `(yihQ or sqgA)`, `(sqvB or yihR)`, `(yihU or slaB)` |
+| `CORE_TK_var1` | `sqwGH`, `sqwI`, `(yihS or sqvD)`, `(yihQ or sqgA)` |
+| `CORE_TK_var2` | `sqwGH`, `sqwI`, `(yihS or sqvD)`, `(yihQ or sqgA)`, `sqwF`, `sqwD` |
+| `CORE_ED_var1` | `sedA`, `sedB`, `sedC`, `sedD`, `(yihQ or sqgA)` |
+| `CORE_ED_var2` | `sedA`, `sedB`, `sedC`, `sedD`, `(yihQ or sqgA)`, `(yihU or slaB)` |
+| `CORE_ASDO` | `squD`, `(yihQ or sqgA)`, `squF` |
+| `CORE_ASDO_var2` | `squD`, `(yihQ or sqgA)` |
+| `CORE_ASDO_var3` | `squD`, `squF` |
+| `CORE_ASMO` | `sqoD`, `(yihQ or sqgA)`, `squF` |
+
+For EMP-related models, `(yihV or sqiK)` and `(yihT or sqiA)` were treated as defining steps because they represent the kinase and aldolase parts of the sulfo-EMP route. Detection of these steps was therefore especially important for interpretation of EMP-like SQ degradation signal.
+
+The SQ score was calculated as:
+
+```text
+score_raw = mean(log1p(TPM_e) for core pathway steps)
+
+coverage = detected_core_steps / total_core_steps
+
+SQ_score = score_raw × coverage
+```
+This score was used as a targeted read-level proxy for SQ-related transcriptional signal.
 The resulting SQ-score table was transformed into a wide feature matrix for downstream modelling. The final SQ feature block contained 57 SQ-related features, including:
 
 ```text
