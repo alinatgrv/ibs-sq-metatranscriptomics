@@ -19,11 +19,13 @@ The main aim of the project was to analyze gut microbiome metatranscriptomic dat
 3. Generate taxonomic profiles using MetaPhlAn.
 4. Generate functional profiles using HUMAnN.
 5. Check whether known MetaCyc SQ degradation pathways are reconstructed in HUMAnN output.
-6. Analyze species-level taxonomic differences between IBS and control samples.
-7. Analyze pathway-level functional differences between IBS and control samples.
-8. Integrate metabolomics data and test IBS-associated metabolite changes.
-9. Explore associations between sulfur-related metabolites and bacterial species.
-10. Compare clinical, taxonomic, SQ-score, and metabolomic feature blocks using Random Forest classification.
+6. Perform targeted DIAMOND-based search for SQ-related homologous genes in cleaned metatranscriptomic reads.
+7. Aggregate DIAMOND hits at the enzyme level and calculate targeted SQ scores for predefined SQ pathway models.
+8. Analyze species-level taxonomic differences between IBS and control samples.
+9. Analyze pathway-level functional differences between IBS and control samples.
+10. Integrate metabolomics data and test IBS-associated metabolite changes.
+11. Explore associations between sulfur-related metabolites and bacterial species.
+12. Compare clinical, taxonomic, SQ-score, and metabolomic feature blocks using Random Forest classification.
 
 ## Dataset
 
@@ -99,18 +101,26 @@ The recommended repository structure is:
 │   │   ├── plot_rf_multiblock_results.py
 │   │   └── plot_rf_metrics_heatmap_selected.py
 │   └── visualization/
-│       ├── make_qc_figures.py
-│       ├── metaphlan_species_stats.py
-│       ├── plot_metaphlan_species_overview.R
-│       ├── plot_maaslin2_species_covariates_heatmap.R
-│       ├── plot_maaslin2_metabolomics_results.R
-│       ├── plot_sulfur_related_metabolites.R
-│       ├── plot_metabolomics_presentation_figures.R
-│       ├── plot_metabolomics_one_image.R
-│       ├── plot_fig7_functional_taxonomic_profile.R
-│       ├── plot_fig7_functional_taxonomic_profile_no_letters.R
-│       ├── plot_section7_four_figures_separately.R
-│       └── plot_maaslin2_covariates_ready.R
+│   │   ├── make_qc_figures.py
+│   │   ├── metaphlan_species_stats.py
+│   │   ├── plot_metaphlan_species_overview.R
+│   │   ├── plot_maaslin2_species_covariates_heatmap.R
+│   │   ├── plot_maaslin2_metabolomics_results.R
+│   │   ├── plot_sulfur_related_metabolites.R
+│   │   ├── plot_metabolomics_presentation_figures.R
+│   │   ├── plot_metabolomics_one_image.R
+│   │   ├── plot_fig7_functional_taxonomic_profile.R
+│   │   ├── plot_fig7_functional_taxonomic_profile_no_letters.R
+│   │   ├── plot_section7_four_figures_separately.R
+│   │   └── plot_maaslin2_covariates_ready.R
+│   └── targeted_sq/
+│       ├── SQ_diamond_blastx.sbatch
+│       ├── fasta_utils.py
+│       ├── parse_diamond.py
+│       ├── sq_helpers.py
+│       ├── sq_score_analysis.py
+│       ├── sq_score_plots.py
+│       └── sq_score.py
 ├── results/
 │   ├── figures/
 │   └── tables/
@@ -125,6 +135,8 @@ SRA metadata and FASTQ download
 Quality control and host read removal with KneadData
         ↓
 Targeted SQ-related gene search with DIAMOND
+        ↓
+DIAMOND hit filtering, enzyme-level aggregation, and SQ score calculation
         ↓
 Taxonomic profiling with MetaPhlAn
         ↓
@@ -156,17 +168,23 @@ The main software versions used in the analysis were:
 | KneadData | 0.12.4 |
 | Trimmomatic | 0.40 |
 | FastQC | 0.12.1 |
+| MultiQC | 1.35 |
 | HUMAnN | 3.9 |
 | MetaPhlAn | 4.1.1 |
 | Bowtie2 | 2.5.5 |
+| DIAMOND | 2.2.0 |
 | R | 4.3.3 |
 | MaAsLin2 | 1.18.0 |
 | Python | 3.11.15 |
 | scikit-learn | 1.8.0 |
 | pandas | 3.0.3 |
 | NumPy | 2.4.4 |
+| SciPy | 1.17.1 |
+| matplotlib | 3.10.9 |
+| seaborn | 0.13.2 |
+| scikit-learn | 1.8.0 |
 
-Preprocessing tools were run from the `ibs_env` conda environment. HUMAnN and MetaPhlAn were run from the `humann39_env_fix` environment. MaAsLin2 analyses were run from `maaslin2_env`, and Random Forest models were run from `rf_py_env`.
+Preprocessing tools were run from the `ibs_env` conda environment. HUMAnN and MetaPhlAn were run from the `humann39_env_fix` environment. MaAsLin2 analyses were run from `maaslin2_env`, and Random Forest models were run from `rf_py_env`. Targeted SQ DIAMOND searches were run from the `diamond_env` environment. Targeted SQ-score parsing, filtering, statistical comparison, and visualization scripts were run using the Python environment listed above.
 
 ### Data download
 
@@ -281,6 +299,44 @@ Additional checks showed that `PWY-7446` and `PWY-7722` were present in the inte
 
 Therefore, direct pathway-level evidence for SQ degradation was not detected by HUMAnN in this cohort, and SQ-related analysis was moved toward targeted gene/SQ-score approaches.
 
+### Targeted SQ-related gene search and SQ score calculation
+
+Because known SQ degradation pathways were not reconstructed in HUMAnN output, an additional targeted read-level search was performed against a custom protein reference library of SQ-related homologs.
+
+The custom reference library included homologous proteins associated with several SQ degradation route models, including sulfo-EMP, SQ hydrolysis, sulfo-TAL, sulfo-TK, and sulfo-ED-related pathways. Cleaned metatranscriptomic reads were aligned against this protein reference using DIAMOND `blastx`.
+
+DIAMOND hits were parsed and annotated using protein metadata from the reference FASTA file and a homolog annotation table. Hits were filtered using the following criteria:
+
+- minimum percentage identity;
+- minimum bit score;
+- minimum alignment length;
+- minimum subject coverage.
+
+Subject coverage was calculated as:
+```text
+subject_coverage = 100 × alignment_length_aa / protein_length_aa
+```
+When multiple hits were assigned to the same read, the best hit was retained based on bit score, sequence identity, and subject coverage.
+
+Filtered hits were aggregated by sample and reference protein. For each sample and SQ-related enzyme, the number of uniquely assigned reads was counted. Enzyme-level abundance was then normalized using a TPM-like approach based on protein length:
+```text
+RPK_e = reads_e / protein_length_e(kb)
+
+TPM_e = 10^6 × RPK_e / sum(RPK_all)
+```
+
+For each SQ pathway model, a targeted SQ score was calculated using predefined core enzymatic steps. Alternative enzymes within the same step were treated using OR logic, and the maximum TPM among alternative enzymes was used for that step.
+
+The SQ score was calculated as:
+```text
+score_raw = mean(log1p(TPM_e) for core pathway steps)
+
+coverage = detected_core_steps / total_core_steps
+
+SQ_score = score_raw × coverage
+```
+This score was used as a targeted read-level proxy for SQ-related transcriptional signal. It should be interpreted as enzyme-level support for SQ-related pathway models rather than as direct evidence of complete pathway reconstruction.
+
 ### Differential abundance analysis with MaAsLin2
 
 Differential abundance testing was performed using **MaAsLin2** with multivariable linear models.
@@ -318,6 +374,76 @@ The general settings were:
 - significance threshold: q-value ≤ 0.25;
 - prevalence filtering: features present in at least 10% of samples.
 
+## How to reproduce the analysis
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/<username>/<repository-name>.git
+cd <repository-name>
+```
+
+### 2. Create environments
+
+Example:
+
+```bash
+mamba env create -f envs/maaslin2_env.yml
+mamba env create -f envs/random_forest_env.yml
+```
+
+### 3. Run preprocessing and profiling scripts
+
+Example SLURM scripts are stored in:
+
+```text
+scripts/preprocessing/
+scripts/profiling/
+```
+
+### 4. Run targeted SQ-score analysis
+
+Targeted SQ-related gene analysis is implemented in:
+```text
+scripts/targeted_sq/
+```
+
+Example DIAMOND hit parsing and filtering:
+```bash
+python scripts/targeted_sq/04_parse_filter_diamond_hits.py \
+  --diamond-dir output/diamond_out \
+  --fasta output/SQ_all_prot.faa \
+  --homolog-table output/datasheets/all_homolog_sq_2.csv \
+  --metadata data/SraRunTable.csv \
+  --outdir results/tables/targeted_sq
+```
+
+Example SQ score calculation:
+```bash
+python scripts/targeted_sq/05_compute_sq_scores.py \
+  --filtered-hits results/tables/targeted_sq/filtered_diamond_hits.tsv \
+  --outdir results/tables/targeted_sq
+```
+
+Example IBS vs control comparison:
+```bash
+python scripts/targeted_sq/06_compare_sq_scores_ibs_hc.py \
+  --sq-scores results/tables/targeted_sq/sq_scores.tsv \
+  --outdir results/tables/targeted_sq
+```
+
+### 5. Run downstream analyses
+
+Example:
+
+```bash
+Rscript scripts/differential_abundance/run_maaslin2_species.R
+Rscript scripts/differential_abundance/run_maaslin2_species_subtypes.R
+Rscript scripts/differential_abundance/run_maaslin2_metabolomics.R
+Rscript scripts/crossomics/run_maaslin2_species_vs_sulfur_metabolites.R
+python scripts/machine_learning/run_rf_multiblock_ibs.py
+```
+
 ## Main results
 
 ### 1. HUMAnN pathway-level analysis
@@ -328,7 +454,13 @@ After prevalence filtering, 185 pathways remained in the model. No pathway-level
 
 This suggests that broad pathway-level HUMAnN profiles did not show robust IBS-associated differences under the tested model.
 
-### 2. Species-level taxonomic overview
+### 2. Targeted SQ-score analysis
+
+Because HUMAnN did not reconstruct known SQ degradation pathways, a targeted DIAMOND-based SQ-score analysis was performed. Filtered read-level hits were aggregated by SQ-related reference enzymes and normalized using a TPM-like approach. SQ scores were then calculated for predefined pathway models based on core enzymatic step coverage and enzyme-level abundance.
+
+The targeted SQ-score analysis provided enzyme-level evidence for SQ-related transcriptional signal in the dataset, but SQ-score distributions alone did not provide strong separation between IBS and control samples.
+
+### 3. Species-level taxonomic overview
 
 The species-level MetaPhlAn table contained 326 samples and 626 species-level taxa.
 
@@ -351,7 +483,7 @@ Candidate taxa included:
 
 These candidates were treated as exploratory before covariate-adjusted testing.
 
-### 3. MaAsLin2 species-level IBS vs control analysis
+### 4. MaAsLin2 species-level IBS vs control analysis
 
 The general IBS vs control model did not detect FDR-significant species-level associations with IBS status after correction for age, sex, BMI, diet, and ethnicity.
 
@@ -369,7 +501,7 @@ Nominal IBS-associated species included:
 
 None of these passed FDR correction in the general IBS vs control model.
 
-### 4. IBS subtype species-level analysis
+### 5. IBS subtype species-level analysis
 
 IBS subtype analysis compared Control, IBS-C, IBS-D, and IBS-M groups. IBS-U samples were excluded because the subtype was unspecified.
 
@@ -382,7 +514,7 @@ The subtype model detected two FDR-significant species-level associations with I
 
 Both associations were positive, indicating higher abundance in IBS-M compared with controls after adjustment for age, sex, BMI, diet, and ethnicity.
 
-### 5. Metabolomics IBS vs control analysis
+### 6. Metabolomics IBS vs control analysis
 
 The metabolomics MaAsLin2 model tested 601 metabolites across 368 samples.
 
@@ -420,7 +552,7 @@ Sulfur-related metabolites detected among IBS-associated results included:
 
 These findings suggest changes in sulfur-associated metabolism, but they do not directly prove altered SQ degradation.
 
-### 6. Cross-omics analysis of sulfur-related metabolites and taxa
+### 7. Cross-omics analysis of sulfur-related metabolites and taxa
 
 Two sulfur-related metabolites were selected for species-metabolite association analysis:
 
@@ -442,7 +574,7 @@ All significant associations were positive.
 
 For `androstenediol disulfate`, no taxa passed FDR correction, although several nominal positive associations were observed.
 
-### 7. Random Forest multi-block classification
+### 8. Random Forest multi-block classification
 
 Random Forest classification was used to compare the predictive value of different feature blocks:
 
@@ -501,44 +633,6 @@ The results suggest that metabolomics carried the strongest IBS classification s
 - Several important clinical covariates from the original study, such as anxiety scores, were not included in all current models.
 - Some metabolomics-based Random Forest features may reflect diet, sweetener intake, or host metabolic background rather than IBS-specific biology.
 
-## How to reproduce the analysis
-
-### 1. Clone the repository
-
-```bash
-git clone https://github.com/<username>/<repository-name>.git
-cd <repository-name>
-```
-
-### 2. Create environments
-
-Example:
-
-```bash
-mamba env create -f envs/maaslin2_env.yml
-mamba env create -f envs/random_forest_env.yml
-```
-
-### 3. Run preprocessing and profiling scripts
-
-Example SLURM scripts are stored in:
-
-```text
-scripts/preprocessing/
-scripts/profiling/
-```
-
-### 4. Run downstream analyses
-
-Example:
-
-```bash
-Rscript scripts/differential_abundance/run_maaslin2_species.R
-Rscript scripts/differential_abundance/run_maaslin2_species_subtypes.R
-Rscript scripts/differential_abundance/run_maaslin2_metabolomics.R
-Rscript scripts/crossomics/run_maaslin2_species_vs_sulfur_metabolites.R
-python scripts/machine_learning/run_rf_multiblock_ibs.py
-```
 
 ## Main output files
 
@@ -574,6 +668,18 @@ results/metabolomics/maaslin2_metabolites_368_group_tss_log_diet_batch/group_IBS
 results/crossomics/species_vs_sulfur_metabolites_maaslin2/species_vs_phenol_sulfate/phenol_sulfate_q025_taxa_results.tsv
 results/crossomics/species_vs_sulfur_metabolites_maaslin2/summary_plots/crossomics_sulfur_q025_results_combined.tsv
 results/random_forest/ibs_multiblock_python/rf_block_summary.tsv
+```
+
+Main targeted SQ output files:
+
+```text
+results/tables/targeted_sq/filtered_diamond_hits.tsv
+results/tables/targeted_sq/diamond_filtering_qc.tsv
+results/tables/targeted_sq/sample_gene_abundance.tsv
+results/tables/targeted_sq/sq_scores.tsv
+results/tables/targeted_sq/sq_scores_wide.tsv
+results/tables/targeted_sq/sq_score_group_summary.tsv
+results/tables/targeted_sq/sq_score_ibs_hc_stats.tsv
 ```
 
 ## Contributions
