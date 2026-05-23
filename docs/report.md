@@ -69,6 +69,7 @@ ibs-sq-metatranscriptomics/
 │   ├── humann_metaphlan_env.yml
 │   ├── maaslin2_env.yml
 │   ├── rf_py_env.yml
+│   ├── diamond_sq_env.yml
 │   └── software_versions.md
 ├── results/
 │   ├── README.md
@@ -80,7 +81,8 @@ ibs-sq-metatranscriptomics/
     ├── differential_abundance/
     ├── crossomics/
     ├── machine_learning/
-    └── visualization/
+    ├── visualization/
+    └── targeted_sq/
 ```
 
 Large raw sequencing files, full intermediate HUMAnN and MetaPhlAn outputs, and complete MaAsLin2 folders are not included in the repository. The repository contains selected scripts, final summary tables, final figures, documentation, and environment files.
@@ -99,6 +101,7 @@ Main environments:
 | `humann39_env_fix` | HUMAnN and MetaPhlAn profiling |
 | `maaslin2_env` | MaAsLin2 association analyses and R plotting |
 | `rf_py_env` | Random Forest modelling and Python visualization |
+| `diamond_sq_env` | DIAMOND hit parsing, SQ-score calculation, statistical comparison |
 
 The exported environment files are stored in `envs/`.
 
@@ -119,6 +122,13 @@ Important tools included:
 - MaAsLin2 1.18.0
 - Python 3.11.15
 - scikit-learn 1.8.0
+- MultiQC 1.35
+- DIAMOND 2.2.0
+- pandas 3.0.3
+- NumPy 2.4.6
+- SciPy 1.17.1
+- matplotlib 3.10.9
+- seaborn 0.13.2
 
 ---
 
@@ -132,6 +142,8 @@ SRA metadata collection and FASTQ download
 Quality control, trimming, and host read removal with KneadData
         ↓
 Targeted SQ-related gene search with DIAMOND
+        ↓
+DIAMOND hit filtering, enzyme-level aggregation, and SQ score calculation
         ↓
 Taxonomic profiling with MetaPhlAn
         ↓
@@ -357,13 +369,143 @@ results/tables/SQ_pathway_uniref90_hits.tsv
 
 ## 11. Targeted SQ-related gene search with DIAMOND
 
-Because standard HUMAnN output did not reconstruct SQ pathways, a targeted gene-level search was included.
+Because standard HUMAnN output did not reconstruct known SQ degradation pathways, a targeted read-level search was included as an additional SQ-focused analysis step.
 
-The goal of this step was to detect SQ-related genes more directly using a curated protein reference and DIAMOND sequence search.
+The goal of this step was to detect SQ-related transcriptional signal more directly using a curated protein reference library and DIAMOND `blastx` search. The custom reference library included homologous proteins associated with several SQ degradation route models, including sulfo-EMP, SQ hydrolysis, sulfo-TAL, sulfo-TK, sulfo-ED, ASDO, and ASMO-related pathways.
 
-This step was used to support the construction of SQ-related features and SQ-score summaries.
+### 11.1 DIAMOND hit parsing and filtering
 
-The resulting SQ-score table was transformed into a wide feature matrix for downstream modelling. The final SQ feature block contained 57 SQ-related features, including:
+Cleaned metatranscriptomic reads were aligned against the SQ-related protein reference library using DIAMOND `blastx`. The resulting DIAMOND hit tables were parsed and annotated using two additional sources of information:
+
+- protein metadata extracted from the reference FASTA file;
+- homolog annotation table linking reference accessions to SQ-related genes and pathway models.
+
+For each DIAMOND hit, the following information was retained or derived:
+
+- sample identifier;
+- query read identifier;
+- reference protein accession;
+- homologous reference gene;
+- SQ-related pathway assignment;
+- percentage identity;
+- bit score;
+- alignment length;
+- reference protein length;
+- subject coverage.
+
+Subject coverage was calculated as:
+
+```text
+subject_coverage = 100 × alignment_length_aa / protein_length_aa
+```
+
+Hits were filtered by percentage identity, bit score, alignment length, and subject coverage. When multiple hits were assigned to the same read, the best hit was retained based on bit score, sequence identity, and subject coverage. This reduced redundancy and prevented the same read from contributing multiple times to enzyme-level abundance estimates.
+
+### 11.2 Enzyme-level aggregation and TPM-like normalization
+
+Filtered DIAMOND hits were aggregated by sample and reference protein. For each sample and SQ-related enzyme, the number of uniquely assigned reads was counted.
+
+Because reference proteins differed in length, enzyme-level read counts were normalized using a TPM-like approach:
+
+```text
+RPK_e = reads_e / protein_length_e(kb)
+
+TPM_e = 10^6 × RPK_e / sum(RPK_all)
+```
+
+Here, `reads_e` is the number of reads assigned to enzyme `e`, and `protein_length_e(kb)` is the reference protein length in kilobases. This normalization was used to make enzyme-level signals more comparable across reference proteins within each sample.
+
+### 11.3 Core SQ pathway models used for SQ score calculation
+
+For each SQ pathway model, a targeted SQ score was calculated using predefined core enzymatic steps. Each item in brackets corresponds to one pathway step. Alternative genes within the same step were treated using OR logic; therefore, detection of any listed alternative enzyme was considered support for that step. When several alternative enzymes were detected for the same step, the maximum TPM value was used.
+
+| Pathway model | Core enzymatic steps used for scoring |
+|---|---|
+| `CORE_EMP1` | `yihV`, `yihT`, `yihS`, `yihQ` |
+| `CORE_EMP2` | `sqiA`, `sqiK`, `sqvD`, `sqgA` |
+| `CORE_EMP` | `(yihV or sqiK)`, `(yihT or sqiA)`, `(yihS or sqvD)`, `(yihQ or sqgA)`, `(yihU or slaB)` |
+| `CORE_EMP_alt` | `(yihV or sqiK)`, `(yihT or sqiA)`, `(yihS or sqvD)`, `(yihQ or sqgA)`, `(sqvB or yihR)` |
+| `CORE_TAL` | `sqvA`, `(yihS or sqvD)`, `(yihQ or sqgA)`, `(sqvB or yihR)`, `(yihU or slaB)` |
+| `CORE_TK_var1` | `sqwGH`, `sqwI`, `(yihS or sqvD)`, `(yihQ or sqgA)` |
+| `CORE_TK_var2` | `sqwGH`, `sqwI`, `(yihS or sqvD)`, `(yihQ or sqgA)`, `sqwF`, `sqwD` |
+| `CORE_ED_var1` | `sedA`, `sedB`, `sedC`, `sedD`, `(yihQ or sqgA)` |
+| `CORE_ED_var2` | `sedA`, `sedB`, `sedC`, `sedD`, `(yihQ or sqgA)`, `(yihU or slaB)` |
+| `CORE_ASDO` | `squD`, `(yihQ or sqgA)`, `squF` |
+| `CORE_ASDO_var2` | `squD`, `(yihQ or sqgA)` |
+| `CORE_ASDO_var3` | `squD`, `squF` |
+| `CORE_ASMO` | `sqoD`, `(yihQ or sqgA)`, `squF` |
+
+For EMP-related models, `(yihV or sqiK)` and `(yihT or sqiA)` were treated as key defining steps because they represent the kinase and aldolase components of the sulfo-EMP route.
+
+### 11.4 SQ score calculation
+
+For each sample and pathway model, SQ score was calculated from TPM-like enzyme-level values and core step coverage.
+
+```text
+score_raw = mean(log1p(TPM_e) for core pathway steps)
+
+coverage = detected_core_steps / total_core_steps
+
+SQ_score = score_raw × coverage
+```
+
+The `score_raw` component reflects the average abundance of enzymes supporting the pathway model, while `coverage` penalizes incomplete detection of core enzymatic steps. Therefore, a pathway model receives a higher SQ score only when it has both detectable enzyme-level abundance and broader core-step support.
+
+The resulting SQ score should be interpreted as a targeted read-level proxy for SQ-related transcriptional signal. It does not prove complete pathway reconstruction and should not be interpreted as direct biochemical evidence of SQ degradation.
+
+### 11.5 SQ score results and IBS/control comparison
+
+The final SQ score table contained 326 metatranscriptomic samples and 13 SQ pathway models. Each row represented one sample and one pathway model.
+
+Selected output tables here:
+
+```text
+results/tables/targeted_sq/sq_scores.tsv
+results/tables/targeted_sq/sq_score_ibs_hc_stats.tsv
+```
+
+The strongest SQ-score signals were observed for EMP- and TK-related models, especially `CORE_EMP`, `CORE_EMP_alt`, `CORE_TK_var1`, and `CORE_TK_var2`. Several other models, such as `CORE_ASDO`, `CORE_ASMO`, `CORE_TAL`, and ED-related variants, showed lower or more sparse scores across samples.
+
+IBS and control groups were compared for each pathway model using the Mann-Whitney U test with Benjamini-Hochberg FDR correction. No SQ pathway model showed a statistically significant IBS/control difference after FDR correction. The lowest nominal p-values were observed for TK-related models, but these associations did not remain significant after multiple testing correction.
+
+The main SQ-score figure is shown below.
+
+![SQ score IBS vs control boxplot](../results/figures/sq_score_ibs_hc_boxplot.png)
+
+**Figure 2.** Targeted SQ pathway scores in IBS and control metatranscriptomic samples. Each point represents one sample, and boxplots summarize the distribution of SQ scores for each pathway model. SQ scores were calculated from DIAMOND-derived enzyme-level signals using TPM-like normalization and core-step coverage.
+
+This result suggests that SQ-related transcriptional signal was detectable at the targeted enzyme-search level, but SQ scores alone did not show robust separation between IBS and control samples.
+
+### 11.6 SQ score and metabolite correlation analysis
+
+To connect targeted SQ scores with the metabolomics layer, Spearman correlation analysis was performed between SQ pathway scores and metabolite abundances in the matched metatranscriptomics-metabolomics subset.
+
+The correlation analysis included:
+
+- 13 SQ pathway models;
+- 601 metabolites;
+- 193 matched samples with available SQ-score and metabolomics data;
+- 7813 pathway-metabolite correlation tests.
+
+Selected output tables:
+
+```text
+results/tables/targeted_sq/metabolite_correlations/sq_score_metabolite_spearman_correlations.tsv
+results/tables/targeted_sq/metabolite_correlations/sq_score_metabolite_spearman_rho_matrix.tsv
+results/tables/targeted_sq/metabolite_correlations/sq_score_metabolite_q_value_matrix.tsv
+```
+
+Several SQ score-metabolite correlations were nominally significant, and a subset remained significant after FDR correction. The strongest correlations were moderate in magnitude, indicating metabolite co-variation with SQ-score features rather than direct pathway-level causality.
+
+Selected correlation heatmaps:
+
+![SQ score metabolite correlations](../results/figures/metabolite_correlations/sq_score_metabolite_significant_correlations_heatmap.png)
+
+**Figure 3.** Significant Spearman correlations between targeted SQ pathway scores and metabolite abundances after FDR correction.
+
+These correlations were used as exploratory evidence to connect targeted SQ-related transcriptional features with the metabolomics layer.
+
+The resulting SQ-score table was transformed into a wide feature matrix for downstream modelling. The final SQ feature block contained 57 SQ-related features, including summary features and pathway-specific scores:
 
 ```text
 sq__SQ_score_max
@@ -461,7 +603,7 @@ results/figures/fig7_combined_functional_taxonomic_profile.png
 
 ![Functional and taxonomic profile](../results/figures/fig7_combined_functional_taxonomic_profile.png)
 
-**Figure 2.** Combined overview of selected functional and taxonomic features from the metatranscriptomic analysis.
+**Figure 4.** Combined overview of selected functional and taxonomic features from the metatranscriptomic analysis.
 
 ---
 
@@ -549,7 +691,7 @@ results/figures/maaslin2_species_covariates_heatmap.png
 
 ![Species MaAsLin2 covariates heatmap](../results/figures/maaslin2_species_covariates_heatmap.png)
 
-**Figure 3.** Heatmap-style summary of selected MaAsLin2 species-level associations and covariate effects.
+**Figure 5.** Heatmap-style summary of selected MaAsLin2 species-level associations and covariate effects.
 
 Species-level results were more informative than pathway-level results. Several taxonomic features showed associations or nominal differences between IBS-related groups, supporting the idea that taxonomic shifts may be more detectable in this dataset than broad HUMAnN pathway-level changes.
 
@@ -611,7 +753,7 @@ results/figures/phenol_sulfate_q025_barplot.pdf
 
 ![Metabolomics significant metabolites](../results/figures/metabolomics_significant_metabolites_coefficients.png)
 
-**Figure 4.** Selected metabolite associations with IBS status from MaAsLin2 analysis.
+**Figure 6.** Selected metabolite associations with IBS status from MaAsLin2 analysis.
 
 A sulfur-related metabolite subset was inspected separately. This was important because the biological hypothesis of the project involved SQ degradation and sulfur-associated metabolic outputs.
 
@@ -723,11 +865,11 @@ results/figures/random_forest_metrics_heatmap_selected_blocks.png
 
 ![Random Forest summary](../results/figures/random_forest_final_summary.png)
 
-**Figure 5.** Summary of Random Forest multi-block IBS/control classification analysis.
+**Figure 7.** Summary of Random Forest multi-block IBS/control classification analysis.
 
 ![Random Forest metrics heatmap](../results/figures/random_forest_metrics_heatmap_selected_blocks.png)
 
-**Figure 6.** Random Forest performance metrics across selected feature blocks.
+**Figure 8.** Random Forest performance metrics across selected feature blocks.
 
 The Random Forest analysis was used as an exploratory comparison of feature blocks. It should not be interpreted as a validated diagnostic model. The main value of this step was to compare which data layers carried classification signal and whether SQ-related features added information when combined with taxa, metabolites, or clinical variables.
 
@@ -895,3 +1037,6 @@ Overall, the results support the idea that SQ-related metabolism should be inves
 
 8. MaAsLin2 documentation:  
    https://huttenhower.sph.harvard.edu/maaslin/
+
+9. Buchfink B, Reuter K, Drost H-G. Sensitive protein alignments at tree-of-life scale using DIAMOND.  
+   https://www.nature.com/articles/s41592-021-01101-x
