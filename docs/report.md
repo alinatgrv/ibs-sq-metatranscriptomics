@@ -470,7 +470,7 @@ IBS and control groups were compared for each pathway model using the Mann-Whitn
 
 The main SQ-score figure is shown below.
 
-![SQ score IBS vs control boxplot](../results/figures/targeted_sq/sq_score_ibs_hc_boxplot.png)
+![SQ score IBS vs control boxplot](../results/figures/sq_score_ibs_hc_boxplot.png)
 
 **Figure 2.** Targeted SQ pathway scores in IBS and control metatranscriptomic samples. Each point represents one sample, and boxplots summarize the distribution of SQ scores for each pathway model. SQ scores were calculated from DIAMOND-derived enzyme-level signals using TPM-like normalization and core-step coverage.
 
@@ -499,7 +499,7 @@ Several SQ score-metabolite correlations were nominally significant, and a subse
 
 Selected correlation heatmaps:
 
-![SQ score metabolite correlations](../results/figures/targeted_sq/metabolite_correlations/sq_score_metabolite_significant_correlations_heatmap.png)
+![SQ score metabolite correlations](../results/figures/metabolite_correlations/sq_score_metabolite_significant_correlations_heatmap.png)
 
 **Figure 3.** Significant Spearman correlations between targeted SQ pathway scores and metabolite abundances after FDR correction.
 
