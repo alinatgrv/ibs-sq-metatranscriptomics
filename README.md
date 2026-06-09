@@ -1,5 +1,20 @@
 # Multi-omics analysis of sulfoquinovose metabolism in Irritable Bowel Syndrome
 
+## Table of contents
+
+- [Project overview](#project-overview)
+- [Aim](#aim)
+- [Objectives](#objectives)
+- [Dataset](#dataset)
+- [Prerequisites and computational requirements](#prerequisites-and-computational-requirements)
+- [Repository structure](#repository-structure)
+- [Workflow](#workflow)
+- [How to reproduce the analysis](#how-to-reproduce-the-analysis)
+- [Main results](#main-results)
+- [Key conclusions](#key-conclusions)
+- [Limitations](#limitations)
+- [References](#references)
+
 ## Project overview
 
 This repository contains the analysis workflow and selected results for a metatranscriptomic and multi-omics study of sulfoquinovose (SQ) metabolism in the gut microbiome of patients with irritable bowel syndrome (IBS).
@@ -40,11 +55,7 @@ The main aim of the project was to analyze gut microbiome metatranscriptomic dat
   - IBS: **128 samples**
   - Control: **106 samples**
 
-Large raw sequencing files and full intermediate tables are not stored in this repository. The repository contains scripts, selected summary tables, selected figures. Full raw and intermediate data were stored on the HPC cluster under the main project directory:
-
-```text
-/home/alina_tgrv/beegfs/IBS_SQ
-```
+Large raw sequencing files and full intermediate tables are not stored in this repository. The repository contains scripts, selected summary tables, selected figures. Full raw and intermediate data were stored on the HPC cluster.
 
 ## Prerequisites and computational requirements
 The workflow was designed for execution on a Linux HPC cluster with SLURM. The full analysis requires substantial disk space because raw SRA files, FASTQ files, KneadData outputs, HUMAnN/MetaPhlAn profiles, DIAMOND outputs, reference databases, and logs are generated as intermediate data.
@@ -75,58 +86,14 @@ The recommended repository structure is:
 │   ├── workflow.md
 │   └── report.md
 ├── envs/
-│   └── software_versions.md
 ├── scripts/
 │   ├── preprocessing/
-│   │   ├── download_PRJNA812699.sbatch
-│   │   ├── download_PRJNA812699_fqd.sbatch
-│   │   ├── kneaddata_array.sh
-│   │   └── multiqc.sbatch
 │   ├── profiling/
-│   │   ├── metaphlan_array.sh
-│   │   ├── humann_array.sh
-│   │   └── prepare_metaphlan_samples.sh
 │   ├── differential_abundance/
-│   │   ├── make_metadata_for_maaslin2.R
-│   │   ├── make_metadata_for_maaslin2_species_subtypes.R
-│   │   ├── make_metaphlan_species_for_maaslin2.R
-│   │   ├── make_pathabundance_for_maaslin2.R
-│   │   ├── make_metabolomics_for_maaslin2.R
-│   │   ├── run_maaslin2_pathways.R
-│   │   ├── run_maaslin2_species.R
-│   │   ├── run_maaslin2_species_subtypes.R
-│   │   ├── run_maaslin2_metabolomics.R
-│   │   └── run_maaslin2_metabolomics_with_HAD.R
 │   ├── crossomics/
-│   │   ├── run_maaslin2_species_vs_sulfur_metabolites.R
-│   │   └── plot_crossomics_sulfur_metabolites_summary.R
 │   ├── machine_learning/
-│   │   ├── make_rf_multiblock_input.R
-│   │   ├── run_rf_multiblock_ibs.py
-│   │   ├── run_rf_multiblock_ibs.slurm
-│   │   ├── plot_rf_multiblock_results.py
-│   │   └── plot_rf_metrics_heatmap_selected.py
 │   └── visualization/
-│   │   ├── make_qc_figures.py
-│   │   ├── metaphlan_species_stats.py
-│   │   ├── plot_metaphlan_species_overview.R
-│   │   ├── plot_maaslin2_species_covariates_heatmap.R
-│   │   ├── plot_maaslin2_metabolomics_results.R
-│   │   ├── plot_sulfur_related_metabolites.R
-│   │   ├── plot_metabolomics_presentation_figures.R
-│   │   ├── plot_metabolomics_one_image.R
-│   │   ├── plot_fig7_functional_taxonomic_profile.R
-│   │   ├── plot_fig7_functional_taxonomic_profile_no_letters.R
-│   │   ├── plot_section7_four_figures_separately.R
-│   │   └── plot_maaslin2_covariates_ready.R
 │   └── targeted_sq/
-│       ├── SQ_diamond_blastx.sbatch
-│       ├── fasta_utils.py
-│       ├── parse_diamond.py
-│       ├── sq_helpers.py
-│       ├── sq_score_analysis.py
-│       ├── sq_score_plots.py
-│       └── sq_score.py
 └─── results/
     ├── figures/
     └── tables/
