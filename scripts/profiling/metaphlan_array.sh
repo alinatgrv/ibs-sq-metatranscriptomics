@@ -1,4 +1,17 @@
 #!/bin/bash
+
+# Run MetaPhlAn taxonomic profiling for preprocessed
+# metatranscriptomic samples.
+#
+# Input:
+#   - paired-end FASTQ files after KneadData
+#
+# Output:
+#   - species-level MetaPhlAn profiles
+#
+# Execution:
+#   SLURM job array (one sample per task)
+
 #SBATCH --time=120:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
@@ -6,18 +19,19 @@
 #SBATCH --mem=32G
 #SBATCH --partition=compute
 #SBATCH --job-name=MetaPhlAn_IBS
-#SBATCH --output=/home/alina_tgrv/beegfs/IBS_SQ/logs/metaphlan_%A_%a.out
-#SBATCH --error=/home/alina_tgrv/beegfs/IBS_SQ/logs/metaphlan_%A_%a.err
+#SBATCH --output=logs/metaphlan_%A_%a.out
+#SBATCH --error=logs/metaphlan_%A_%a.err
 #SBATCH --array=1-327%5
 
-set -u
-set -o pipefail
+set -euo pipefail
 
 # conda inside sbatch
-source /home/alina_tgrv/.pyenv/versions/miniconda3-3.12-24.7.1-0/etc/profile.d/conda.sh
-conda activate /home/alina_tgrv/beegfs/conda_envs/humann39_env_fix
+source "${HOME}/.pyenv/versions/miniconda3-3.12-24.7.1-0/etc/profile.d/conda.sh"
 
-BASE=/home/alina_tgrv/beegfs/IBS_SQ
+CONDA_ENV=${CONDA_ENV:-humann39_env_fix}
+conda activate "$CONDA_ENV"
+
+BASE=${BASE:-$(pwd)}
 READS=$BASE/qc_kneaddata_metatranscriptome
 META=$BASE/metadata
 LOGS=$BASE/logs
@@ -66,7 +80,7 @@ THREADS=${SLURM_CPUS_PER_TASK:-4}
   echo "[INFO] DB: $DB"
   echo "[INFO] DB index: $DB_INDEX"
   echo "[INFO] Threads: $THREADS"
-  echo "[INFO] Conda env: /home/alina_tgrv/beegfs/conda_envs/humann39_env_fix"
+  echo "[INFO] Conda env: $CONDA_ENV"
   echo "[INFO] metaphlan path: $(which metaphlan || echo 'not_found')"
   echo "[INFO] MetaPhlAn version:"
   metaphlan --version || true

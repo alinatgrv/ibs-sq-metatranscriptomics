@@ -1,4 +1,19 @@
 #!/bin/bash
+
+# Run HUMAnN profiling for metatranscriptomic samples.
+#
+# Input:
+#   - preprocessed paired-end FASTQ files
+#   - MetaPhlAn taxonomic profiles
+#
+# Output:
+#   - HUMAnN gene family tables
+#   - pathway abundance tables
+#   - pathway coverage tables
+#
+# Execution:
+#   SLURM job array (one sample per task)
+
 #SBATCH --time=120:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
@@ -6,29 +21,31 @@
 #SBATCH --mem=32G
 #SBATCH --partition=compute
 #SBATCH --job-name=HUMAnN_mtx
-#SBATCH --output=/home/alina_tgrv/beegfs/IBS_SQ/logs/humann_mtx_%A_%a.out
-#SBATCH --error=/home/alina_tgrv/beegfs/IBS_SQ/logs/humann_mtx_%A_%a.err
+#SBATCH --output=logs/humann_mtx_%A_%a.out
+#SBATCH --error=logs/humann_mtx_%A_%a.err
 #SBATCH --array=1-325%3
 
-set -u
-set -o pipefail
+set -euo pipefail
 
-source /home/alina_tgrv/.pyenv/versions/miniconda3-3.12-24.7.1-0/etc/profile.d/conda.sh
-conda activate /home/alina_tgrv/beegfs/conda_envs/humann39_env_fix
+source "${HOME}/.pyenv/versions/miniconda3-3.12-24.7.1-0/etc/profile.d/conda.sh"
 
-BASE=/home/alina_tgrv/beegfs/IBS_SQ
-READS=$BASE/qc_kneaddata_metatranscriptome
-META=$BASE/metadata
-LOGS=$BASE/logs
+CONDA_ENV=${CONDA_ENV:-humann39_env_fix}
+conda activate "$CONDA_ENV"
 
-METAPHLAN_RESULTS=$BASE/results/metaphlan_metatranscriptome
-HUMANN_RESULTS=$BASE/results/humann_metatranscriptome
+BASE=${BASE:-/home/alina_tgrv/beegfs/IBS_SQ}
 
-STATUS_DIR=$HUMANN_RESULTS/status
-RUNLOG_DIR=$HUMANN_RESULTS/run_logs
-TMPBASE=$BASE/tmp/humann_metatranscriptome
+READS="${BASE}/qc_kneaddata_metatranscriptome"
+META="${BASE}/metadata"
+LOGS="${BASE}/logs"
 
-SAMPLE_LIST=$META/humann_samples_ready.txt
+METAPHLAN_RESULTS="${BASE}/results/metaphlan_metatranscriptome"
+HUMANN_RESULTS="${BASE}/results/humann_metatranscriptome"
+
+STATUS_DIR="${HUMANN_RESULTS}/status"
+RUNLOG_DIR="${HUMANN_RESULTS}/run_logs"
+TMPBASE="${BASE}/tmp/humann_metatranscriptome"
+
+SAMPLE_LIST="${META}/humann_samples_ready.txt"
 THREADS=${SLURM_CPUS_PER_TASK:-4}
 
 mkdir -p "$LOGS" "$HUMANN_RESULTS" "$STATUS_DIR" "$RUNLOG_DIR" "$TMPBASE"

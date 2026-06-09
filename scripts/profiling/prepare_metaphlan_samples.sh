@@ -1,13 +1,17 @@
 #!/bin/bash
+# Generate a sample list for MetaPhlAn processing
+# from paired-end FASTQ files.
+
 set -euo pipefail
 
-BASE=/home/alina_tgrv/beegfs/IBS_SQ
-READS=$BASE/qc_kneaddata
-META=$BASE/metadata
+BASE=${BASE:-$(pwd)}
+
+READS="${BASE}/qc_kneaddata"
+META="${BASE}/metadata"
 
 mkdir -p "$META"
 
-OUT="$META/metaphlan_samples.txt"
+OUT="${META}/metaphlan_samples.txt"
 
 if [ ! -d "$READS" ]; then
   echo "[ERROR] Reads directory not found: $READS" >&2
